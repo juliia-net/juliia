@@ -2,6 +2,8 @@
 
 An energetic, photo-led landing page about skating, breaking, and San Francisco.
 
+The interface supports English and Russian. A visitor's browser locale selects the initial language, and the header switch stores a manual preference locally.
+
 ## Development
 
 ```sh

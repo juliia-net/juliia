@@ -1,10 +1,23 @@
 <script>
   import { onMount } from 'svelte';
+  import { detectLocale, translations } from '$lib/i18n.js';
 
   let progress = 0;
   let menuOpen = false;
   let pointerX = 50;
   let pointerY = 30;
+  let locale = 'en';
+  let copy = translations.en;
+
+  /** @param {'en' | 'ru'} nextLocale */
+  const setLocale = (nextLocale, persist = true) => {
+    locale = nextLocale;
+    copy = translations[nextLocale];
+    document.documentElement.lang = nextLocale;
+    if (persist) {
+      try { localStorage.setItem('juliia_locale', nextLocale); } catch { /* Browsing can continue without persistence. */ }
+    }
+  };
 
   const updateProgress = () => {
     const scrollable = document.documentElement.scrollHeight - window.innerHeight;
@@ -18,6 +31,10 @@
   };
 
   onMount(() => {
+    let saved = null;
+    try { saved = localStorage.getItem('juliia_locale'); } catch { /* Use browser detection instead. */ }
+    const detected = detectLocale(navigator.languages?.length ? navigator.languages : [navigator.language]);
+    setLocale(saved === 'ru' || saved === 'en' ? saved : detected, false);
     updateProgress();
     window.addEventListener('scroll', updateProgress, { passive: true });
     return () => window.removeEventListener('scroll', updateProgress);
@@ -27,10 +44,11 @@
 <svelte:window onpointermove={trackPointer} />
 
 <svelte:head>
-  <title>JULIIA — City in Motion</title>
-  <meta name="description" content="Skating, breaking, and San Francisco—always in motion." />
-  <meta property="og:title" content="JULIIA — City in Motion" />
-  <meta property="og:description" content="Roll. Break. Explore. Repeat." />
+  <title>{copy.metaTitle}</title>
+  <meta name="description" content={copy.metaDescription} />
+  <meta property="og:title" content={copy.metaTitle} />
+  <meta property="og:description" content={copy.metaShare} />
+  <meta property="og:locale" content={locale === 'ru' ? 'ru_RU' : 'en_US'} />
   <meta property="og:image" content="https://juliia.net/images/skate-bay.jpg" />
   <meta property="og:type" content="website" />
 </svelte:head>
@@ -39,18 +57,24 @@
 <div class="cursor-glow" style={`--x:${pointerX}%; --y:${pointerY}%`}></div>
 
 <header>
-  <a href="#top" class="wordmark" aria-label="Juliia, back to top">
+  <a href="#top" class="wordmark" aria-label={copy.backToTop}>
     <span class="mark">J</span><span>JULIIA.NET</span>
   </a>
-  <div class="status"><i></i> SF / ONLINE</div>
-  <button class="menu" class:open={menuOpen} aria-label="Toggle navigation" aria-expanded={menuOpen} onclick={() => (menuOpen = !menuOpen)}>
-    <span></span><span></span>
-  </button>
-  <nav class:open={menuOpen} aria-label="Main navigation">
-    <a href="#roll" onclick={() => (menuOpen = false)}>01 Roll</a>
-    <a href="#break" onclick={() => (menuOpen = false)}>02 Break</a>
-    <a href="#sf" onclick={() => (menuOpen = false)}>03 SF</a>
-  </nav>
+  <div class="status"><i></i> {copy.status}</div>
+  <div class="header-actions">
+    <div class="locale-switch" aria-label="Language / Язык">
+      <button class:active={locale === 'en'} aria-pressed={locale === 'en'} onclick={() => setLocale('en')}>EN</button>
+      <button class:active={locale === 'ru'} aria-pressed={locale === 'ru'} onclick={() => setLocale('ru')}>RU</button>
+    </div>
+    <button class="menu" class:open={menuOpen} aria-label={copy.menu} aria-expanded={menuOpen} onclick={() => (menuOpen = !menuOpen)}>
+      <span></span><span></span>
+    </button>
+    <nav class:open={menuOpen} aria-label={copy.navigation}>
+      <a href="#roll" onclick={() => (menuOpen = false)}>{copy.navRoll}</a>
+      <a href="#break" onclick={() => (menuOpen = false)}>{copy.navBreak}</a>
+      <a href="#sf" onclick={() => (menuOpen = false)}>{copy.navSf}</a>
+    </nav>
+  </div>
 </header>
 
 <main id="top">
@@ -58,110 +82,110 @@
     <div class="hero-meta mono">
       <span>37.7749° N</span>
       <span>122.4194° W</span>
-      <span>BUILD 001</span>
+      <span>{copy.build}</span>
     </div>
     <div class="hero-copy">
-      <p class="kicker"><span>●</span> Bay Area movement system</p>
-      <h1>CITY<br /><em>IN</em> MOTION</h1>
+      <p class="kicker"><span>●</span> {copy.kicker}</p>
+      <h1>{copy.heroCity}<br /><em>{copy.heroIn}</em> {copy.heroMotion}</h1>
       <div class="hero-deck">
-        <p>Wheels on concrete.<br />Hands on the floor.<br />Eyes on what’s next.</p>
-        <a href="#roll">ENTER THE FLOW <b>↘</b></a>
+        <p>{copy.heroLine1}<br />{copy.heroLine2}<br />{copy.heroLine3}</p>
+        <a href="#roll">{copy.enterFlow} <b>↘</b></a>
       </div>
     </div>
     <figure class="hero-frame">
-      <img src="/images/skate-bay.jpg" alt="Skateboard move by the San Francisco Bay" />
-      <div class="frame-label">CAM_01 / EMBARCADERO</div>
+      <img src="/images/skate-bay.jpg" alt={copy.heroAlt} />
+      <div class="frame-label">{copy.heroFrame}</div>
       <div class="focus-corners" aria-hidden="true"></div>
     </figure>
-    <div class="hero-stamp">NO<br />BRAKES</div>
+    <div class="hero-stamp">{copy.noBrakes}</div>
     <div class="signal signal-a"></div><div class="signal signal-b"></div>
   </section>
 
   <div class="data-ticker" aria-hidden="true">
-    <div><span>SKATE / BREAK / REPEAT</span><b>///</b><span>FOG MODE: ACTIVE</span><b>///</b><span>GRAVITY: OPTIONAL</span><b>///</b><span>SKATE / BREAK / REPEAT</span><b>///</b><span>FOG MODE: ACTIVE</span><b>///</b><span>GRAVITY: OPTIONAL</span><b>///</b></div>
+    <div><span>{copy.ticker1}</span><b>///</b><span>{copy.ticker2}</span><b>///</b><span>{copy.ticker3}</span><b>///</b><span>{copy.ticker1}</span><b>///</b><span>{copy.ticker2}</span><b>///</b><span>{copy.ticker3}</span><b>///</b></div>
   </div>
 
   <section class="roll section grid-bg" id="roll">
     <div class="section-head">
-      <div><span class="index">01</span><span class="slash">/</span><span>ROLL MODE</span></div>
-      <p>FOUR WHEELS<br />INFINITE LINES</p>
+      <div><span class="index">01</span><span class="slash">/</span><span>{copy.rollMode}</span></div>
+      <p>{copy.rollSide1}<br />{copy.rollSide2}</p>
     </div>
-    <h2>THE CITY IS<br /><span>THE PARK.</span></h2>
+    <h2>{copy.rollTitle1}<br /><span>{copy.rollTitle2}</span></h2>
     <div class="roll-layout">
       <figure class="image-panel panel-main">
-        <img src="/images/skatepark-night.jpg" alt="Taking a break at a night skatepark" loading="lazy" />
-        <figcaption><span>FRAME_02</span><span>NIGHT SHIFT</span></figcaption>
+        <img src="/images/skatepark-night.jpg" alt={copy.nightAlt} loading="lazy" />
+        <figcaption><span>FRAME_02</span><span>{copy.nightShift}</span></figcaption>
       </figure>
       <div class="route-line" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
       <figure class="image-panel panel-side">
-        <img src="/images/park-reset.jpg" alt="Resting in a San Francisco park with a skateboard" loading="lazy" />
-        <figcaption><span>FRAME_03</span><span>RECHARGE</span></figcaption>
+        <img src="/images/park-reset.jpg" alt={copy.resetAlt} loading="lazy" />
+        <figcaption><span>FRAME_03</span><span>{copy.recharge}</span></figcaption>
       </figure>
       <div class="roll-data mono">
-        <p>SESSION</p><strong>24/7</strong>
-        <p>ENERGY</p><strong>100%</strong>
-        <p>COMFORT ZONE</p><strong>0%</strong>
+        <p>{copy.session}</p><strong>24/7</strong>
+        <p>{copy.energy}</p><strong>100%</strong>
+        <p>{copy.comfort}</p><strong>0%</strong>
       </div>
     </div>
   </section>
 
   <section class="break" id="break">
     <div class="break-title grid-bg">
-      <div class="section-head light"><div><span class="index">02</span><span class="slash">/</span><span>MOVEMENT LAB</span></div><p>FLOOR SIGNAL<br />LOCKED</p></div>
-      <h2>BREAK<br /><span>THE</span> RULES.</h2>
-      <p class="break-intro">Find the beat. Build the move. Freeze the exact second when gravity loses the argument.</p>
+      <div class="section-head light"><div><span class="index">02</span><span class="slash">/</span><span>{copy.lab}</span></div><p>{copy.floor1}<br />{copy.floor2}</p></div>
+      <h2>{copy.breakTitle1}<br /><span>{copy.breakTitle2}</span> {copy.breakTitle3}</h2>
+      <p class="break-intro">{copy.breakIntro}</p>
     </div>
     <div class="lab-grid">
       <figure class="lab-main">
-        <img src="/images/break-freeze.jpg" alt="A playful inverted breaking freeze in a garden" loading="lazy" />
+        <img src="/images/break-freeze.jpg" alt={copy.freezeAlt} loading="lazy" />
         <div class="scanner" aria-hidden="true"></div>
-        <figcaption>CAPTURE / FREEZE_008</figcaption>
+        <figcaption>{copy.capture}</figcaption>
       </figure>
       <div class="lab-console mono">
-        <div class="console-top"><span>MOTION ANALYSIS</span><span class="live">LIVE</span></div>
-        <div class="metric"><span>FLOW</span><strong>98</strong><i style="--value:98%"></i></div>
-        <div class="metric"><span>BALANCE</span><strong>87</strong><i style="--value:87%"></i></div>
-        <div class="metric"><span>STYLE</span><strong>MAX</strong><i style="--value:100%"></i></div>
-        <p>&gt; BODY_POSITION: UNEXPECTED<br />&gt; BEAT_SYNC: TRUE<br />&gt; NEXT_MOVE: LOADING_</p>
+        <div class="console-top"><span>{copy.analysis}</span><span class="live">{copy.live}</span></div>
+        <div class="metric"><span>{copy.flow}</span><strong>98</strong><i style="--value:98%"></i></div>
+        <div class="metric"><span>{copy.balance}</span><strong>87</strong><i style="--value:87%"></i></div>
+        <div class="metric"><span>{copy.style}</span><strong>{copy.max}</strong><i style="--value:100%"></i></div>
+        <p>&gt; {copy.bodyPosition}<br />&gt; {copy.beatSync}<br />&gt; {copy.nextMove}</p>
       </div>
       <figure class="lab-side">
-        <img src="/images/handstand-garden.jpg" alt="A one-handed freeze on the grass" loading="lazy" />
-        <div>ROTATE VIEW <span>↻</span></div>
+        <img src="/images/handstand-garden.jpg" alt={copy.handstandAlt} loading="lazy" />
+        <div>{copy.rotate} <span>↻</span></div>
       </figure>
     </div>
   </section>
 
   <section class="sf grid-bg" id="sf">
     <div class="sf-type">
-      <div class="section-head"><div><span class="index">03</span><span class="slash">/</span><span>HOME GRID</span></div><p>PACIFIC TIME<br />LOCAL SIGNAL</p></div>
+      <div class="section-head"><div><span class="index">03</span><span class="slash">/</span><span>{copy.homeGrid}</span></div><p>{copy.pacificTime}<br />{copy.localSignal}</p></div>
       <h2>SAN<br />FRAN<span>CISCO</span></h2>
-      <p class="sf-copy">Fog rolling in. Muni humming past. Concrete, ocean air, steep streets—and another spot hiding around the next corner.</p>
-      <div class="sf-chips"><span>HILLS ++</span><span>FOG ++</span><span>COLOR ++</span></div>
+      <p class="sf-copy">{copy.sfCopy}</p>
+      <div class="sf-chips"><span>{copy.hills}</span><span>{copy.fog}</span><span>{copy.color}</span></div>
     </div>
     <figure class="sf-image">
-      <img src="/images/dmc-move.jpg" alt="Dancing beside a classic car in the California sun" loading="lazy" />
-      <div class="vertical-label">WEST COAST / BEST COAST</div>
+      <img src="/images/dmc-move.jpg" alt={copy.danceAlt} loading="lazy" />
+      <div class="vertical-label">{copy.westCoast}</div>
     </figure>
     <div class="orbit" aria-hidden="true"><span>SF</span></div>
   </section>
 
   <section class="protocol">
-    <p class="mono">// MOVEMENT PROTOCOL</p>
-    <div class="protocol-row"><span>01</span><strong>TRY THE WEIRD MOVE</strong><i>↗</i></div>
-    <div class="protocol-row"><span>02</span><strong>LAUGH WHEN IT FLOPS</strong><i>↗</i></div>
-    <div class="protocol-row"><span>03</span><strong>GET BACK UP</strong><i>↗</i></div>
-    <div class="protocol-row"><span>04</span><strong>MAKE IT YOURS</strong><i>↗</i></div>
+    <p class="mono">{copy.protocol}</p>
+    <div class="protocol-row"><span>01</span><strong>{copy.rule1}</strong><i>↗</i></div>
+    <div class="protocol-row"><span>02</span><strong>{copy.rule2}</strong><i>↗</i></div>
+    <div class="protocol-row"><span>03</span><strong>{copy.rule3}</strong><i>↗</i></div>
+    <div class="protocol-row"><span>04</span><strong>{copy.rule4}</strong><i>↗</i></div>
   </section>
 
   <section class="finale grid-bg">
-    <div class="terminal mono"><span>JULIIA.NET</span><span>SYSTEM READY</span></div>
-    <h2>GO<br /><span>OFFLINE.</span></h2>
-    <p>THE BEST STUFF IS OUT THERE.</p>
-    <a href="#top">RESTART ↟</a>
+    <div class="terminal mono"><span>JULIIA.NET</span><span>{copy.systemReady}</span></div>
+    <h2>{copy.finale1}<br /><span>{copy.finale2}</span></h2>
+    <p>{copy.finaleCopy}</p>
+    <a href="#top">{copy.restart} ↟</a>
   </section>
 </main>
 
-<footer><span>JULIIA.NET / 2026</span><p>MADE IN SAN FRANCISCO WITH LOUD MUSIC</p><span>END OF LINE_</span></footer>
+<footer><span>JULIIA.NET / 2026</span><p>{copy.footer}</p><span>{copy.end}</span></footer>
 
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
@@ -179,9 +203,14 @@
   .mark { display: grid; place-items: center; width: 34px; aspect-ratio: 1; color: #080b10; background: #5eefff; font: 1.25rem 'Archivo Black', sans-serif; }
   .status { display: flex; align-items: center; gap: .6rem; font: .68rem 'IBM Plex Mono', monospace; letter-spacing: .12em; }
   .status i { width: 7px; aspect-ratio: 1; border-radius: 50%; background: #b8ff2c; box-shadow: 0 0 12px #b8ff2c; animation: pulse 1.5s infinite; }
-  nav { justify-self: end; display: flex; gap: 1.5rem; }
+  .header-actions { justify-self: end; display: flex; align-items: center; gap: 1.25rem; }
+  nav { display: flex; gap: 1.5rem; }
   nav a { text-decoration: none; font: 500 .68rem 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: .08em; }
   nav a:hover { color: #5eefff; }
+  .locale-switch { display: flex; overflow: hidden; border: 1px solid rgba(94,239,255,.55); }
+  .locale-switch button { min-width: 2.25rem; padding: .4rem .45rem; border: 0; color: #a6afbd; background: transparent; font: 600 .58rem 'IBM Plex Mono', monospace; cursor: pointer; }
+  .locale-switch button + button { border-left: 1px solid rgba(94,239,255,.35); }
+  .locale-switch button.active { color: #080b10; background: #5eefff; }
   .menu { display: none; }
   .hero { min-height: 100svh; position: relative; overflow: hidden; isolation: isolate; padding: 78px clamp(1rem,4vw,4rem) 2rem; }
   .hero::before { content: ''; position: absolute; inset: 0; z-index: -2; background: linear-gradient(115deg,#080b10 0 55%,#152345 100%); }
@@ -204,7 +233,7 @@
   .focus-corners::before,.focus-corners::after { content: ''; position: absolute; z-index: 3; width: 34px; height: 34px; border-color: #ff4d00; }
   .focus-corners::before { left: 2rem; top: 2rem; border-left: 2px solid #ff4d00; border-top: 2px solid #ff4d00; }
   .focus-corners::after { right: 2rem; bottom: 2rem; border-right: 2px solid #ff4d00; border-bottom: 2px solid #ff4d00; }
-  .hero-stamp { position: absolute; z-index: 6; right: 2vw; bottom: 12%; display: grid; place-items: center; width: 110px; aspect-ratio: 1; color: #080b10; background: #ff4d00; border-radius: 50%; font: 1.15rem/.85 'Archivo Black', sans-serif; text-align: center; transform: rotate(10deg); box-shadow: 0 0 0 7px #080b10,0 0 0 8px #ff4d00; }
+  .hero-stamp { position: absolute; z-index: 6; right: 2vw; bottom: 12%; display: grid; place-items: center; width: 110px; aspect-ratio: 1; color: #080b10; background: #ff4d00; border-radius: 50%; font: 1.15rem/.85 'Archivo Black', sans-serif; text-align: center; white-space: pre-line; transform: rotate(10deg); box-shadow: 0 0 0 7px #080b10,0 0 0 8px #ff4d00; }
   .signal { position: absolute; z-index: 1; height: 6px; background: #5eefff; opacity: .5; }
   .signal-a { width: 25vw; right: 30%; top: 28%; animation: signal 4s infinite; }.signal-b { width: 12vw; left: 8%; bottom: 18%; animation: signal 3s 1s infinite reverse; }
   .data-ticker { overflow: hidden; color: #080b10; background: #5eefff; border-block: 2px solid #080b10; }
@@ -246,11 +275,22 @@
   footer{display:flex;justify-content:space-between;gap:2rem;padding:1.4rem 2rem;background:#080b10;font: .56rem 'IBM Plex Mono',monospace;letter-spacing:.08em}footer p{margin:0;color:#5eefff}
   @keyframes ticker{to{transform:translateX(-50%)}}@keyframes pulse{50%{opacity:.3}}@keyframes signal{50%{transform:translateX(100%);opacity:.1}}@keyframes scan{to{top:80%}}@keyframes spin{to{transform:rotate(360deg)}}
   @media(max-width:760px){
-    .cursor-glow{display:none}header{grid-template-columns:1fr auto;height:66px}.status{display:none}.menu{display:grid;gap:5px;place-content:center;width:42px;height:42px;padding:0;border:1px solid #5eefff;background:#080b10;color:white;z-index:2}.menu span{display:block;width:18px;height:2px;background:currentColor;transition:.2s}.menu.open span:first-child{transform:translateY(3.5px) rotate(45deg)}.menu.open span:last-child{transform:translateY(-3.5px) rotate(-45deg)}nav{display:none;position:fixed;inset:0;background:#1744ff;place-content:center;text-align:center;gap:1rem}nav.open{display:grid}nav a{font:2.5rem 'Archivo Black',sans-serif}
+    .cursor-glow{display:none}header{grid-template-columns:1fr auto;height:66px}.status{display:none}.header-actions{gap:.55rem}.menu{display:grid;gap:5px;place-content:center;width:42px;height:42px;padding:0;border:1px solid #5eefff;background:#080b10;color:white;z-index:2}.menu span{display:block;width:18px;height:2px;background:currentColor;transition:.2s}.menu.open span:first-child{transform:translateY(3.5px) rotate(45deg)}.menu.open span:last-child{transform:translateY(-3.5px) rotate(-45deg)}nav{display:none;position:fixed;inset:0;background:#1744ff;place-content:center;text-align:center;gap:1rem}nav.open{display:grid}nav a{font:2.5rem 'Archivo Black',sans-serif}.locale-switch{z-index:3}
     .hero{min-height:920px;padding-top:66px}.hero-meta{display:none}.hero-copy{width:100%;padding-top:4.5rem}.kicker{margin-left:0}h1{font-size:clamp(4.2rem,20vw,7rem)}.hero-deck{margin:2rem 0 0;align-items:start;flex-direction:column;gap:1.5rem}.hero-frame{width:82vw;right:7vw;bottom:2rem}.hero-frame img{height:46vh}.hero-stamp{width:78px;right:3vw;bottom:30%;font-size:.8rem}
     .section-head p{display:none}.roll h2,.break h2,.sf h2{font-size:clamp(3.6rem,17vw,6rem);margin:3rem 0}.roll-layout{grid-template-columns:1fr}.route-line{display:none}.panel-side{width:75%;margin:-2rem 0 0 auto;transform:none}.roll-data{display:grid;grid-template-columns:1fr auto;align-items:end}.roll-data p,.roll-data strong{margin:.4rem 0}
     .break-intro{width:100%;margin-left:0}.lab-grid{grid-template-columns:1fr}.lab-console{min-height:360px}.lab-side{width:72%;margin:-2rem 0 0 auto;transform:none}
     .sf{grid-template-columns:1fr}.sf-image{width:86%;margin:0}.orbit{display:none}.sf-type{order:2}.protocol-row{grid-template-columns:2.5rem 1fr auto}.protocol-row strong{font-size:clamp(1.4rem,7vw,2.4rem)}.finale h2{font-size:clamp(5rem,22vw,8rem)}footer{flex-direction:column}footer p{order:3}
+  }
+  :global(html[lang='ru']) h1 { font-size: clamp(3.6rem, 8.4vw, 8.5rem); }
+  :global(html[lang='ru']) .roll h2,
+  :global(html[lang='ru']) .break h2,
+  :global(html[lang='ru']) .finale h2 { font-size: clamp(3.3rem, 7.4vw, 7.5rem); }
+  :global(html[lang='ru']) .protocol-row strong { font-size: clamp(1.6rem, 4vw, 4rem); }
+  @media(max-width:760px){
+    :global(html[lang='ru']) h1 { font-size: clamp(3.2rem, 15vw, 5.5rem); }
+    :global(html[lang='ru']) .roll h2,
+    :global(html[lang='ru']) .break h2,
+    :global(html[lang='ru']) .finale h2 { font-size: clamp(2.8rem, 13vw, 4.8rem); }
   }
   @media(prefers-reduced-motion:reduce){:global(html){scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}}
 </style>
